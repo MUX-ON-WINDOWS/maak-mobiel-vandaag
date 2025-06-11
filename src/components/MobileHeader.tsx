@@ -26,7 +26,7 @@ const MobileHeader = ({ title, onMenuClick }: MobileHeaderProps) => {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+    <header className="sticky top-0 bg-white shadow-sm border-b border-gray-100 px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}

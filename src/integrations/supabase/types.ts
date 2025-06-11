@@ -45,6 +45,187 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          description: string | null
+          progress: number
+          due_date: string | null
+          team_size: number
+          color: string
+          status: 'active' | 'completed' | 'paused'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          description?: string | null
+          progress?: number
+          due_date?: string | null
+          team_size?: number
+          color?: string
+          status?: 'active' | 'completed' | 'paused'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          description?: string | null
+          progress?: number
+          due_date?: string | null
+          team_size?: number
+          color?: string
+          status?: 'active' | 'completed' | 'paused'
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      tasks: {
+        Row: {
+          id: string
+          user_id: string
+          project_id: string | null
+          title: string
+          description: string | null
+          completed: boolean
+          priority: 'low' | 'medium' | 'high'
+          due_date: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          project_id?: string | null
+          title: string
+          description?: string | null
+          completed?: boolean
+          priority?: 'low' | 'medium' | 'high'
+          due_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          project_id?: string | null
+          title?: string
+          description?: string | null
+          completed?: boolean
+          priority?: 'low' | 'medium' | 'high'
+          due_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      activities: {
+        Row: {
+          id: string
+          user_id: string
+          action: string
+          description: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          action: string
+          description: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          action?: string
+          description?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      events: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          description: string | null
+          start_time: string
+          end_time: string
+          location: string | null
+          attendees: number
+          color: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          description?: string | null
+          start_time: string
+          end_time: string
+          location?: string | null
+          attendees?: number
+          color?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          description?: string | null
+          start_time?: string
+          end_time?: string
+          location?: string | null
+          attendees?: number
+          color?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

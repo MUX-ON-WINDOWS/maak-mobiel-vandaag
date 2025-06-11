@@ -16,7 +16,7 @@ const BottomNavigation = ({ activeTab, onTabChange }: BottomNavigationProps) => 
   ];
 
   return (
-    <nav className="bg-white border-t border-gray-200 px-4 py-2">
+    <nav className="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-2">
       <div className="flex items-center justify-around">
         {tabs.map((tab) => {
           const Icon = tab.icon;

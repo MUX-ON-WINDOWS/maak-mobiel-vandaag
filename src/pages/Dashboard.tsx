@@ -1,76 +1,71 @@
-
 import React from 'react';
 import { BarChart3, CheckCircle, Clock, TrendingUp, Plus, ArrowRight } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import ProjectCard from '../components/ProjectCard';
 import { useToast } from '@/hooks/use-toast';
+import { useProjects } from '@/contexts/ProjectContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Dashboard = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { projects, tasks, activities, loading } = useProjects();
+
+  // Calculate statistics
+  const activeProjects = projects.length;
+  const completedTasks = tasks.filter(task => task.completed).length;
+  const pendingTasks = tasks.filter(task => !task.completed).length;
+  const productivity = tasks.length > 0 
+    ? Math.round((completedTasks / tasks.length) * 100) 
+    : 0;
 
   const stats = [
     {
       title: 'Actieve Projecten',
-      value: '12',
+      value: activeProjects.toString(),
       icon: BarChart3,
       color: 'bg-blue-500',
-      trend: '+2 deze week'
+      trend: `+${projects.filter(p => new Date(p.created_at).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000).length} deze week`
     },
     {
       title: 'Voltooide Taken',
-      value: '89',
+      value: completedTasks.toString(),
       icon: CheckCircle,
       color: 'bg-green-500',
-      trend: '+12 vandaag'
+      trend: `+${tasks.filter(t => t.completed && new Date(t.updated_at).getTime() > Date.now() - 24 * 60 * 60 * 1000).length} vandaag`
     },
     {
       title: 'Lopende Taken',
-      value: '24',
+      value: pendingTasks.toString(),
       icon: Clock,
       color: 'bg-orange-500'
     },
     {
       title: 'Team Productiviteit',
-      value: '94%',
+      value: `${productivity}%`,
       icon: TrendingUp,
       color: 'bg-purple-500',
-      trend: '+5%'
+      trend: productivity > 0 ? `+${productivity}%` : undefined
     }
   ];
 
-  const projects = [
-    {
-      title: 'Website Redesign',
-      description: 'Modernisering van de bedrijfswebsite met nieuwe UX/UI',
-      progress: 75,
-      dueDate: '15 Dec',
-      teamSize: 5,
-      color: 'bg-blue-500'
-    },
-    {
-      title: 'Mobile App',
-      description: 'Ontwikkeling van native iOS en Android applicatie',
-      progress: 45,
-      dueDate: '28 Dec',
-      teamSize: 8,
-      color: 'bg-green-500'
-    },
-    {
-      title: 'Database Migratie',
-      description: 'Overgang naar nieuwe database infrastructuur',
-      progress: 90,
-      dueDate: '10 Dec',
-      teamSize: 3,
-      color: 'bg-purple-500'
-    }
-  ];
+  // Format recent activities
+  const formatTimeAgo = (date: string) => {
+    const now = new Date();
+    const activityDate = new Date(date);
+    const diffInSeconds = Math.floor((now.getTime() - activityDate.getTime()) / 1000);
 
-  const recentActivities = [
-    { action: 'Task voltooid', description: 'UI Design voor login pagina', time: '2 min geleden' },
-    { action: 'Nieuw project', description: 'E-commerce platform gestart', time: '1 uur geleden' },
-    { action: 'Team update', description: 'Sarah heeft zich aangesloten bij Mobile App', time: '3 uur geleden' },
-    { action: 'Deadline update', description: 'Website Redesign deadline verschoven', time: '1 dag geleden' }
-  ];
+    if (diffInSeconds < 60) return 'net geleden';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min geleden`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} uur geleden`;
+    return `${Math.floor(diffInSeconds / 86400)} dag geleden`;
+  };
+
+  const recentActivities = activities.map(activity => ({
+    action: activity.action.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+    description: activity.description,
+    time: formatTimeAgo(activity.created_at)
+  }));
 
   const handleStatClick = (title: string) => {
     toast({
@@ -100,10 +95,23 @@ const Dashboard = () => {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="p-4 pb-20 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl mx-auto mb-4 flex items-center justify-center">
+            <span className="text-2xl font-bold text-white">PM</span>
+          </div>
+          <p className="text-gray-600">Dashboard laden...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 pb-20 bg-gray-50 min-h-screen">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-1">Goedemorgen, Alex!</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-1">Goedemorgen, {user?.user_metadata?.full_name || 'Gebruiker'}!</h2>
         <p className="text-gray-600">Hier is je projectoverzicht voor vandaag</p>
       </div>
 
@@ -134,17 +142,30 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {projects.map((project, index) => (
-          <div key={index} onClick={() => handleProjectClick(project.title)} className="cursor-pointer">
-            <ProjectCard {...project} />
+        {projects.slice(0, 3).map((project) => (
+          <div key={project.id} onClick={() => handleProjectClick(project.title)} className="cursor-pointer">
+            <ProjectCard
+              title={project.title}
+              description={project.description || ''}
+              progress={project.progress}
+              dueDate={new Date(project.due_date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
+              teamSize={project.team_size}
+              color={`bg-${project.color}-500`}
+            />
           </div>
         ))}
+
+        {projects.length === 0 && (
+          <div className="text-center py-8 bg-white rounded-xl shadow-sm border border-gray-100">
+            <p className="text-gray-500">Nog geen projecten</p>
+          </div>
+        )}
       </div>
 
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Recente Activiteit</h3>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          {recentActivities.map((activity, index) => (
+          {recentActivities.slice(0, 4).map((activity, index) => (
             <div key={index} className={`p-4 flex items-center gap-3 hover:bg-gray-50 transition-colors ${index < recentActivities.length - 1 ? 'border-b border-gray-100' : ''}`}>
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               <div className="flex-1">
@@ -154,6 +175,12 @@ const Dashboard = () => {
               <div className="text-xs text-gray-500">{activity.time}</div>
             </div>
           ))}
+
+          {recentActivities.length === 0 && (
+            <div className="p-4 text-center text-gray-500">
+              Nog geen activiteiten
+            </div>
+          )}
         </div>
       </div>
 

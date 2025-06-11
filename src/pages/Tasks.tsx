@@ -1,11 +1,17 @@
-
 import React, { useState } from 'react';
 import { Plus, Filter, Search, Calendar, Clock } from 'lucide-react';
 import TaskItem from '../components/TaskItem';
 import { useToast } from '@/hooks/use-toast';
+import { useProjects } from '@/contexts/ProjectContext';
+import { useAuth } from '@/contexts/AuthContext';
+import type { Database } from '@/integrations/supabase/types';
+
+type Task = Database['public']['Tables']['tasks']['Row'];
 
 const Tasks = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { tasks, loading, error, createTask, updateTask, deleteTask } = useProjects();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('all');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -13,65 +19,28 @@ const Tasks = () => {
     title: '',
     description: '',
     priority: 'medium' as 'high' | 'medium' | 'low',
-    dueDate: ''
+    due_date: ''
   });
 
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      title: 'Design wireframes voltooien',
-      description: 'Creëer wireframes voor de nieuwe landing page',
-      completed: false,
-      priority: 'high' as const,
-      dueDate: 'Vandaag'
-    },
-    {
-      id: 2,
-      title: 'API documentatie bijwerken',
-      description: 'Update de REST API documentatie met nieuwe endpoints',
-      completed: true,
-      priority: 'medium' as const,
-      dueDate: 'Gisteren'
-    },
-    {
-      id: 3,
-      title: 'User testing sessie plannen',
-      description: 'Organiseer usability testing met 5 gebruikers',
-      completed: false,
-      priority: 'medium' as const,
-      dueDate: 'Morgen'
-    },
-    {
-      id: 4,
-      title: 'Database backup configureren',
-      description: 'Automatische dagelijkse backups instellen',
-      completed: false,
-      priority: 'high' as const,
-      dueDate: '12 Dec'
-    },
-    {
-      id: 5,
-      title: 'Team meeting voorbereiden',
-      description: 'Agenda en presentatie klaarmaken voor weekly standup',
-      completed: false,
-      priority: 'low' as const,
-      dueDate: 'Vrijdag'
+  const toggleTask = async (task: Task) => {
+    try {
+      await updateTask(task.id, { completed: !task.completed });
+      toast({
+        title: task.completed ? "Taak heropend" : "Taak voltooid",
+        description: `"${task.title}" is ${task.completed ? 'heropend' : 'voltooid'}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het bijwerken van de taak",
+        variant: "destructive"
+      });
     }
-  ]);
-
-  const toggleTask = (id: number) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
-    
-    const task = tasks.find(t => t.id === id);
-    toast({
-      title: task?.completed ? "Taak heropend" : "Taak voltooid",
-      description: `"${task?.title}" is ${task?.completed ? 'heropend' : 'voltooid'}`,
-    });
   };
 
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
+    if (!user) return;
+    
     if (!newTask.title.trim()) {
       toast({
         title: "Fout",
@@ -81,34 +50,65 @@ const Tasks = () => {
       return;
     }
 
-    const task = {
-      id: Math.max(...tasks.map(t => t.id)) + 1,
-      title: newTask.title,
-      description: newTask.description,
-      completed: false,
-      priority: newTask.priority,
-      dueDate: newTask.dueDate || 'Geen deadline'
-    };
+    try {
+      await createTask({
+        user_id: user.id,
+        project_id: null,
+        title: newTask.title,
+        description: newTask.description,
+        priority: newTask.priority,
+        due_date: newTask.due_date || null,
+        completed: false
+      });
 
-    setTasks([...tasks, task]);
-    setNewTask({ title: '', description: '', priority: 'medium', dueDate: '' });
-    setShowAddForm(false);
-    
-    toast({
-      title: "Taak toegevoegd",
-      description: `"${task.title}" is toegevoegd aan je takenlijst`,
-    });
+      setNewTask({ title: '', description: '', priority: 'medium', due_date: '' });
+      setShowAddForm(false);
+      
+      toast({
+        title: "Taak toegevoegd",
+        description: `"${newTask.title}" is toegevoegd aan je takenlijst`,
+      });
+    } catch (error) {
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het toevoegen van de taak",
+        variant: "destructive"
+      });
+    }
   };
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.description.toLowerCase().includes(searchTerm.toLowerCase());
+                         (task.description?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     const matchesFilter = filterPriority === 'all' || task.priority === filterPriority;
     return matchesSearch && matchesFilter;
   });
 
   const completedCount = tasks.filter(task => task.completed).length;
   const totalCount = tasks.length;
+
+  if (loading) {
+    return (
+      <div className="p-4 pb-20 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl mx-auto mb-4 flex items-center justify-center">
+            <span className="text-2xl font-bold text-white">PM</span>
+          </div>
+          <p className="text-gray-600">Taken laden...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 pb-20 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600">Er is een fout opgetreden bij het laden van de taken</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 pb-20 bg-gray-50 min-h-screen">
@@ -124,12 +124,12 @@ const Tasks = () => {
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-blue-600">
-                {Math.round((completedCount / totalCount) * 100)}%
+                {totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0}%
               </div>
               <div className="w-16 bg-gray-200 rounded-full h-2 mt-1">
                 <div 
                   className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(completedCount / totalCount) * 100}%` }}
+                  style={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
                 ></div>
               </div>
             </div>
@@ -168,20 +168,12 @@ const Tasks = () => {
         <h3 className="text-lg font-semibold text-gray-900">
           Alle Taken ({filteredTasks.length})
         </h3>
-        <div className="flex gap-2">
-          <button 
-            onClick={() => toast({ title: "Filter", description: "Filter opties worden geladen..." })}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Filter size={20} className="text-gray-600" />
-          </button>
-          <button 
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors flex items-center gap-1"
-          >
-            <Plus size={20} />
-          </button>
-        </div>
+        <button 
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors flex items-center gap-1"
+        >
+          <Plus size={20} />
+        </button>
       </div>
 
       {/* Add Task Form */}
@@ -214,10 +206,9 @@ const Tasks = () => {
                 <option value="high">Hoge prioriteit</option>
               </select>
               <input
-                type="text"
-                placeholder="Deadline"
-                value={newTask.dueDate}
-                onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                type="date"
+                value={newTask.due_date}
+                onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
                 className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -244,11 +235,11 @@ const Tasks = () => {
           <TaskItem
             key={task.id}
             title={task.title}
-            description={task.description}
+            description={task.description || ''}
             completed={task.completed}
             priority={task.priority}
-            dueDate={task.dueDate}
-            onToggle={() => toggleTask(task.id)}
+            dueDate={task.due_date || 'Geen deadline'}
+            onToggle={() => toggleTask(task)}
           />
         ))}
         
