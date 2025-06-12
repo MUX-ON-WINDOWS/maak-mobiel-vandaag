@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { Plus, Filter, Search, Calendar, Clock } from 'lucide-react';
+import { Plus, Filter, Search, Calendar, Clock, Brain, Sparkles } from 'lucide-react';
 import TaskItem from '../components/TaskItem';
+import EnhancedTaskForm from '../components/EnhancedTaskForm';
+import TaskCelebration from '../components/TaskCelebration';
+import AIInsightsPanel from '../components/AIInsightsPanel';
 import { useToast } from '@/hooks/use-toast';
 import { useProjects } from '@/contexts/ProjectContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { calculateTaskAge } from '@/services/aiTaskAnalysis';
 import type { Database } from '@/integrations/supabase/types';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
@@ -15,19 +19,23 @@ const Tasks = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('all');
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newTask, setNewTask] = useState({
-    title: '',
-    description: '',
-    priority: 'medium' as 'high' | 'medium' | 'low',
-    due_date: ''
-  });
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebratedTask, setCelebratedTask] = useState('');
+  const [showAIInsights, setShowAIInsights] = useState(false);
 
   const toggleTask = async (task: Task) => {
     try {
-      await updateTask(task.id, { completed: !task.completed });
+      const newCompletedState = !task.completed;
+      await updateTask(task.id, { completed: newCompletedState });
+      
+      if (newCompletedState) {
+        setCelebratedTask(task.title);
+        setShowCelebration(true);
+      }
+      
       toast({
-        title: task.completed ? "Taak heropend" : "Taak voltooid",
-        description: `"${task.title}" is ${task.completed ? 'heropend' : 'voltooid'}`,
+        title: newCompletedState ? "Taak voltooid" : "Taak heropend",
+        description: `"${task.title}" is ${newCompletedState ? 'voltooid' : 'heropend'}`,
       });
     } catch (error) {
       toast({
@@ -38,35 +46,29 @@ const Tasks = () => {
     }
   };
 
-  const handleAddTask = async () => {
+  const handleAddTask = async (taskData: any) => {
     if (!user) return;
     
-    if (!newTask.title.trim()) {
-      toast({
-        title: "Fout",
-        description: "Voer een taak titel in",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
       await createTask({
         user_id: user.id,
         project_id: null,
-        title: newTask.title,
-        description: newTask.description,
-        priority: newTask.priority,
-        due_date: newTask.due_date || null,
+        title: taskData.title,
+        description: taskData.description,
+        priority: taskData.priority,
+        due_date: taskData.due_date || null,
+        effort_estimate: taskData.effort_estimate,
+        estimated_hours: taskData.estimated_hours ? parseInt(taskData.estimated_hours) : null,
+        is_recurring: taskData.is_recurring,
+        recurrence_pattern: taskData.recurrence_pattern || null,
         completed: false
       });
 
-      setNewTask({ title: '', description: '', priority: 'medium', due_date: '' });
       setShowAddForm(false);
       
       toast({
         title: "Taak toegevoegd",
-        description: `"${newTask.title}" is toegevoegd aan je takenlijst`,
+        description: `"${taskData.title}" is toegevoegd aan je takenlijst`,
       });
     } catch (error) {
       toast({
@@ -112,8 +114,18 @@ const Tasks = () => {
 
   return (
     <div className="p-4 pb-20 bg-gray-50 min-h-screen">
+      {/* Progress Overview */}
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Mijn Taken</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl font-bold text-gray-900">Mijn Taken</h2>
+          <button
+            onClick={() => setShowAIInsights(true)}
+            className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg transition-colors flex items-center gap-1"
+          >
+            <Brain size={16} />
+            <span className="text-sm">AI Insights</span>
+          </button>
+        </div>
         <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
@@ -176,57 +188,13 @@ const Tasks = () => {
         </button>
       </div>
 
-      {/* Add Task Form */}
+      {/* Enhanced Add Task Form */}
       {showAddForm && (
-        <div className="bg-white rounded-lg p-4 mb-4 shadow-sm border border-gray-100">
-          <h4 className="font-semibold text-gray-900 mb-3">Nieuwe Taak</h4>
-          <div className="space-y-3">
-            <input
-              type="text"
-              placeholder="Taak titel..."
-              value={newTask.title}
-              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <textarea
-              placeholder="Beschrijving..."
-              value={newTask.description}
-              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              rows={2}
-            />
-            <div className="flex gap-2">
-              <select
-                value={newTask.priority}
-                onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as 'high' | 'medium' | 'low' })}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="low">Lage prioriteit</option>
-                <option value="medium">Gemiddelde prioriteit</option>
-                <option value="high">Hoge prioriteit</option>
-              </select>
-              <input
-                type="date"
-                value={newTask.due_date}
-                onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleAddTask}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors"
-              >
-                Toevoegen
-              </button>
-              <button
-                onClick={() => setShowAddForm(false)}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium transition-colors"
-              >
-                Annuleren
-              </button>
-            </div>
-          </div>
+        <div className="mb-4">
+          <EnhancedTaskForm
+            onSubmit={handleAddTask}
+            onCancel={() => setShowAddForm(false)}
+          />
         </div>
       )}
 
@@ -240,6 +208,10 @@ const Tasks = () => {
             priority={task.priority}
             dueDate={task.due_date || 'Geen deadline'}
             onToggle={() => toggleTask(task)}
+            effortEstimate={task.effort_estimate}
+            estimatedHours={task.estimated_hours}
+            taskAge={calculateTaskAge(task.created_at)}
+            aiPriorityScore={task.ai_priority_score}
           />
         ))}
         
@@ -250,6 +222,20 @@ const Tasks = () => {
           </div>
         )}
       </div>
+
+      {/* Task Celebration Modal */}
+      <TaskCelebration
+        taskTitle={celebratedTask}
+        isVisible={showCelebration}
+        onClose={() => setShowCelebration(false)}
+      />
+
+      {/* AI Insights Panel */}
+      <AIInsightsPanel
+        tasks={tasks}
+        isOpen={showAIInsights}
+        onClose={() => setShowAIInsights(false)}
+      />
     </div>
   );
 };

@@ -230,4 +230,59 @@ export const eventOperations = {
     if (error) throw error;
     return data;
   }
-}; 
+};
+
+// Add new operations for motivational quotes and task dependencies
+export const motivationalQuoteOperations = {
+  async getRandom(category?: string) {
+    let query = supabase.from('motivational_quotes').select('*');
+    
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    if (!data || data.length === 0) return null;
+    
+    const randomIndex = Math.floor(Math.random() * data.length);
+    return data[randomIndex];
+  }
+};
+
+export const taskDependencyOperations = {
+  async create(taskId: string, dependsOnTaskId: string) {
+    const { data, error } = await supabase
+      .from('task_dependencies')
+      .insert({ task_id: taskId, depends_on_task_id: dependsOnTaskId })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async getByTaskId(taskId: string) {
+    const { data, error } = await supabase
+      .from('task_dependencies')
+      .select(`
+        *,
+        depends_on_task:tasks!task_dependencies_depends_on_task_id_fkey(*)
+      `)
+      .eq('task_id', taskId);
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(taskId: string, dependsOnTaskId: string) {
+    const { error } = await supabase
+      .from('task_dependencies')
+      .delete()
+      .eq('task_id', taskId)
+      .eq('depends_on_task_id', dependsOnTaskId);
+    
+    if (error) throw error;
+  }
+};

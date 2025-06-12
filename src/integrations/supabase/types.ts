@@ -9,6 +9,96 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      activities: {
+        Row: {
+          action: string
+          created_at: string
+          description: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          description: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          description?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          attendees: number | null
+          color: string | null
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          location: string | null
+          start_time: string
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attendees?: number | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          location?: string | null
+          start_time: string
+          title: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attendees?: number | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          location?: string | null
+          start_time?: string
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      motivational_quotes: {
+        Row: {
+          author: string | null
+          category: string | null
+          created_at: string
+          id: string
+          quote: string
+        }
+        Insert: {
+          author?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          quote: string
+        }
+        Update: {
+          author?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          quote?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -47,183 +137,164 @@ export type Database = {
       }
       projects: {
         Row: {
-          id: string
-          user_id: string
-          title: string
-          description: string | null
-          progress: number
-          due_date: string | null
-          team_size: number
-          color: string
-          status: 'active' | 'completed' | 'paused'
+          ai_health_score: number | null
+          color: string | null
           created_at: string
+          description: string | null
+          due_date: string | null
+          estimated_completion_date: string | null
+          id: string
+          progress: number | null
+          status: string | null
+          team_size: number | null
+          title: string
           updated_at: string
+          user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          title: string
-          description?: string | null
-          progress?: number
-          due_date?: string | null
-          team_size?: number
-          color?: string
-          status?: 'active' | 'completed' | 'paused'
+          ai_health_score?: number | null
+          color?: string | null
           created_at?: string
+          description?: string | null
+          due_date?: string | null
+          estimated_completion_date?: string | null
+          id?: string
+          progress?: number | null
+          status?: string | null
+          team_size?: number | null
+          title: string
           updated_at?: string
+          user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          title?: string
-          description?: string | null
-          progress?: number
-          due_date?: string | null
-          team_size?: number
-          color?: string
-          status?: 'active' | 'completed' | 'paused'
+          ai_health_score?: number | null
+          color?: string | null
           created_at?: string
+          description?: string | null
+          due_date?: string | null
+          estimated_completion_date?: string | null
+          id?: string
+          progress?: number | null
+          status?: string | null
+          team_size?: number | null
+          title?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      task_dependencies: {
+        Row: {
+          created_at: string
+          depends_on_task_id: string | null
+          id: string
+          task_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          depends_on_task_id?: string | null
+          id?: string
+          task_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          depends_on_task_id?: string | null
+          id?: string
+          task_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "projects_user_id_fkey"
-            columns: ["user_id"]
-            referencedRelation: "users"
+            foreignKeyName: "task_dependencies_depends_on_task_id_fkey"
+            columns: ["depends_on_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
-          }
+          },
+          {
+            foreignKeyName: "task_dependencies_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tasks: {
         Row: {
-          id: string
-          user_id: string
-          project_id: string | null
-          title: string
-          description: string | null
-          completed: boolean
-          priority: 'low' | 'medium' | 'high'
-          due_date: string | null
+          ai_insights: Json | null
+          ai_priority_score: number | null
+          completed: boolean | null
           created_at: string
+          description: string | null
+          due_date: string | null
+          effort_estimate: string | null
+          estimated_hours: number | null
+          id: string
+          is_recurring: boolean | null
+          last_ai_analysis: string | null
+          parent_task_id: string | null
+          priority: string | null
+          project_id: string | null
+          recurrence_pattern: string | null
+          title: string
           updated_at: string
+          user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          project_id?: string | null
-          title: string
-          description?: string | null
-          completed?: boolean
-          priority?: 'low' | 'medium' | 'high'
-          due_date?: string | null
+          ai_insights?: Json | null
+          ai_priority_score?: number | null
+          completed?: boolean | null
           created_at?: string
+          description?: string | null
+          due_date?: string | null
+          effort_estimate?: string | null
+          estimated_hours?: number | null
+          id?: string
+          is_recurring?: boolean | null
+          last_ai_analysis?: string | null
+          parent_task_id?: string | null
+          priority?: string | null
+          project_id?: string | null
+          recurrence_pattern?: string | null
+          title: string
           updated_at?: string
+          user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          project_id?: string | null
-          title?: string
-          description?: string | null
-          completed?: boolean
-          priority?: 'low' | 'medium' | 'high'
-          due_date?: string | null
+          ai_insights?: Json | null
+          ai_priority_score?: number | null
+          completed?: boolean | null
           created_at?: string
+          description?: string | null
+          due_date?: string | null
+          effort_estimate?: string | null
+          estimated_hours?: number | null
+          id?: string
+          is_recurring?: boolean | null
+          last_ai_analysis?: string | null
+          parent_task_id?: string | null
+          priority?: string | null
+          project_id?: string | null
+          recurrence_pattern?: string | null
+          title?: string
           updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "tasks_project_id_fkey"
-            columns: ["project_id"]
-            referencedRelation: "projects"
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "tasks_user_id_fkey"
-            columns: ["user_id"]
-            referencedRelation: "users"
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
-          }
-        ]
-      }
-      activities: {
-        Row: {
-          id: string
-          user_id: string
-          action: string
-          description: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          action: string
-          description: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          action?: string
-          description?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "activities_user_id_fkey"
-            columns: ["user_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      events: {
-        Row: {
-          id: string
-          user_id: string
-          title: string
-          description: string | null
-          start_time: string
-          end_time: string
-          location: string | null
-          attendees: number
-          color: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          title: string
-          description?: string | null
-          start_time: string
-          end_time: string
-          location?: string | null
-          attendees?: number
-          color?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          title?: string
-          description?: string | null
-          start_time?: string
-          end_time?: string
-          location?: string | null
-          attendees?: number
-          color?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "events_user_id_fkey"
-            columns: ["user_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
+          },
         ]
       }
     }
@@ -231,7 +302,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_task_age_days: {
+        Args: { task_created_at: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
