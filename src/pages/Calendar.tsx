@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Clock, MapPin, Users, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Clock, MapPin, Users, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/contexts/ProjectContext';
 import { eventOperations } from '@/integrations/supabase/database';
 import type { Database } from '@/integrations/supabase/types';
+import TaskDetailsModal from '@/components/TaskDetailsModal';
 
 type Event = Database['public']['Tables']['events']['Row'];
 type Task = Database['public']['Tables']['tasks']['Row'];
@@ -43,6 +44,8 @@ const Calendar = () => {
     attendees: '1',
     color: 'blue'
   });
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showTaskDetails, setShowTaskDetails] = useState(false);
 
   const currentMonth = currentDate.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
   const weekDays = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
@@ -284,6 +287,26 @@ const Calendar = () => {
     return days;
   };
 
+  const handleTaskClick = (item: CalendarItem) => {
+    if (item.type === 'task') {
+      setSelectedTask(item as unknown as Task);
+      setShowTaskDetails(true);
+    }
+  };
+
+  const getPriorityColor = (priority: string | undefined) => {
+    switch (priority) {
+      case 'high':
+        return 'bg-red-100 text-red-700';
+      case 'medium':
+        return 'bg-orange-100 text-orange-700';
+      case 'low':
+        return 'bg-green-100 text-green-700';
+      default:
+        return 'bg-blue-100 text-blue-700';
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-4 pb-20 bg-gray-50 min-h-screen flex items-center justify-center">
@@ -318,205 +341,215 @@ const Calendar = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {weekDays.map((day) => (
-              <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
-                {day}
-              </div>
-            ))}
-          </div>
-          
-          <div className="grid grid-cols-7 gap-1">
-            {renderCalendarDays()}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Agenda voor {selectedDate} {currentMonth.split(' ')[0]}
-        </h3>
-        <button 
-          onClick={() => setShowAddEvent(!showAddEvent)}
-          className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors"
-        >
-          <Plus size={20} />
-        </button>
-      </div>
-
-      {/* Add Event Form */}
-      {showAddEvent && (
-        <div className="bg-white rounded-lg p-4 mb-4 shadow-sm border border-gray-100">
-          <h4 className="font-semibold text-gray-900 mb-3">Nieuw Event</h4>
-          <div className="space-y-3">
-            <input
-              type="text"
-              placeholder="Event titel..."
-              value={newEvent.title}
-              onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <textarea
-              placeholder="Beschrijving..."
-              value={newEvent.description}
-              onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              rows={2}
-            />
-            <div className="flex gap-2">
-              <input
-                type="time"
-                value={newEvent.start_time}
-                onChange={(e) => setNewEvent({ ...newEvent, start_time: e.target.value })}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="time"
-                value={newEvent.end_time}
-                onChange={(e) => setNewEvent({ ...newEvent, end_time: e.target.value })}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Locatie"
-                value={newEvent.location}
-                onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="number"
-                placeholder="Aantal deelnemers"
-                value={newEvent.attendees}
-                onChange={(e) => setNewEvent({ ...newEvent, attendees: e.target.value })}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleAddEvent}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors"
-              >
-                Toevoegen
-              </button>
-              <button
-                onClick={() => setShowAddEvent(false)}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium transition-colors"
-              >
-                Annuleren
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-6">
-        {/* Events Section */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            Events voor {selectedDate} {currentMonth.split(' ')[0]}
-          </h3>
-          <div className="space-y-3">
-            {calendarItems
-              .filter(item => item.type === 'event')
-              .map((item) => (
-                <div 
-                  key={`${item.type}-${item.id}`}
-                  onClick={() => handleItemClick(item)}
-                  className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow"
-                >
-                  <div className="text-center min-w-[80px]">
-                    <div className="text-sm font-semibold text-gray-900">
-                      {new Date(item.start_time).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                    {item.end_time && (
-                      <>
-                        <div className="text-xs text-gray-400">-</div>
-                        <div className="text-sm font-semibold text-gray-900">
-                          {new Date(item.end_time).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </>
-                    )}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Calendar Section */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {weekDays.map((day) => (
+                  <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
+                    {day}
                   </div>
-                  <div className={`w-1 h-12 rounded-full bg-${item.color}-500`}></div>
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{item.title}</h4>
-                    <p className="text-sm text-gray-600 mb-2">{item.description}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      {item.location && (
-                        <div className="flex items-center gap-1">
-                          <MapPin size={12} />
-                          <span>{item.location}</span>
-                        </div>
-                      )}
-                      {item.attendees && (
-                        <div className="flex items-center gap-1">
-                          <Users size={12} />
-                          <span>{item.attendees} deelnemers</span>
-                        </div>
-                      )}
+                ))}
+              </div>
+              
+              <div className="grid grid-cols-7 gap-1">
+                {renderCalendarDays()}
+              </div>
+            </div>
+          </div>
+
+          {/* Side Panel */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {selectedDate} {currentMonth.split(' ')[0]}
+                </h3>
+                <button 
+                  onClick={() => setShowAddEvent(!showAddEvent)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors"
+                >
+                  <Plus size={20} />
+                </button>
+              </div>
+
+              {/* Add Event Form */}
+              {showAddEvent && (
+                <div className="mb-4">
+                  <h4 className="font-semibold text-gray-900 mb-3">Nieuw Event</h4>
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Event titel..."
+                      value={newEvent.title}
+                      onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <textarea
+                      placeholder="Beschrijving..."
+                      value={newEvent.description}
+                      onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      rows={2}
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="time"
+                        value={newEvent.start_time}
+                        onChange={(e) => setNewEvent({ ...newEvent, start_time: e.target.value })}
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <input
+                        type="time"
+                        value={newEvent.end_time}
+                        onChange={(e) => setNewEvent({ ...newEvent, end_time: e.target.value })}
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Locatie"
+                        value={newEvent.location}
+                        onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Aantal deelnemers"
+                        value={newEvent.attendees}
+                        onChange={(e) => setNewEvent({ ...newEvent, attendees: e.target.value })}
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleAddEvent}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors"
+                      >
+                        Toevoegen
+                      </button>
+                      <button
+                        onClick={() => setShowAddEvent(false)}
+                        className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium transition-colors"
+                      >
+                        Annuleren
+                      </button>
                     </div>
                   </div>
                 </div>
-              ))}
-            {calendarItems.filter(item => item.type === 'event').length === 0 && (
-              <div className="text-center py-8 bg-white rounded-lg border border-gray-100">
-                <Clock size={48} className="mx-auto text-gray-300 mb-3" />
-                <p className="text-gray-500">Geen events voor deze dag</p>
-              </div>
-            )}
-          </div>
-        </div>
+              )}
 
-        {/* Tasks Section */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            Deadlines voor {selectedDate} {currentMonth.split(' ')[0]}
-          </h3>
-          <div className="space-y-3">
-            {calendarItems
-              .filter(item => item.type === 'task')
-              .map((item) => (
-                <div 
-                  key={`${item.type}-${item.id}`}
-                  onClick={() => handleItemClick(item)}
-                  className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow"
-                >
-                  <div className="text-center">
-                    <div className="text-sm font-semibold text-gray-900">
-                      Deadline
-                    </div>
-                  </div>
-                  <div className={`w-1 h-12 rounded-full bg-${item.color}-500`}></div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-gray-900">{item.title}</h4>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        item.completed 
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {item.completed ? 'Voltooid' : 'Open'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">{item.description}</p>
-                    {item.priority && (
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <CheckCircle size={12} />
-                        <span className="capitalize">{item.priority} prioriteit</span>
+              {/* Events List */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-gray-900 mb-2">Events</h4>
+                {calendarItems
+                  .filter(item => item.type === 'event')
+                  .map((item) => (
+                    <div 
+                      key={`${item.type}-${item.id}`}
+                      onClick={() => handleItemClick(item)}
+                      className="bg-gray-50 rounded-lg p-3 flex items-start gap-3 cursor-pointer hover:bg-gray-100 transition-colors"
+                    >
+                      <div className={`w-2 h-full rounded-full bg-${item.color}-500`}></div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="text-sm font-medium text-gray-900 truncate">{item.title}</div>
+                          <div className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                            {new Date(item.start_time).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+                            {item.end_time && ` - ${new Date(item.end_time).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}`}
+                          </div>
+                        </div>
+                        {item.description && (
+                          <p className="text-xs text-gray-600 mb-2 line-clamp-2">{item.description}</p>
+                        )}
+                        <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+                          {item.location && (
+                            <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-full">
+                              <MapPin size={12} />
+                              <span className="truncate max-w-[150px]">{item.location}</span>
+                            </div>
+                          )}
+                          {item.attendees && (
+                            <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-full">
+                              <Users size={12} />
+                              <span>{item.attendees} deelnemers</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
+                    </div>
+                  ))}
+                {calendarItems.filter(item => item.type === 'event').length === 0 && (
+                  <div className="text-center py-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-500">Geen events voor deze dag</p>
                   </div>
-                </div>
-              ))}
-            {calendarItems.filter(item => item.type === 'task').length === 0 && (
-              <div className="text-center py-8 bg-white rounded-lg border border-gray-100">
-                <CheckCircle size={48} className="mx-auto text-gray-300 mb-3" />
-                <p className="text-gray-500">Geen deadlines voor deze dag</p>
+                )}
               </div>
-            )}
+
+              {/* Tasks List */}
+              <div className="mt-4 space-y-3">
+                <h4 className="font-semibold text-gray-900 mb-2">Deadlines</h4>
+                {calendarItems
+                  .filter(item => item.type === 'task')
+                  .map((item) => (
+                    <div 
+                      key={`${item.type}-${item.id}`}
+                      onClick={() => handleTaskClick(item)}
+                      className="bg-gray-50 rounded-lg p-3 flex items-start gap-3 cursor-pointer hover:bg-gray-100 transition-colors"
+                    >
+                      <div className={`w-2 h-full rounded-full bg-${item.color}-500`}></div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="text-sm font-medium text-gray-900 truncate">{item.title}</div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              item.completed 
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {item.completed ? 'Voltooid' : 'Open'}
+                            </span>
+                            {item.priority && (
+                              <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-full">
+                                <AlertCircle size={12} className={getPriorityColor(item.priority)} />
+                                <span className="capitalize">{item.priority} prioriteit</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {item.description && (
+                          <p className="text-xs text-gray-600 mb-2 line-clamp-2">{item.description}</p>
+                        )}
+                        <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+                          <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-full">
+                            <Clock size={12} />
+                            <span>
+                              {new Date(item.start_time).toLocaleTimeString('nl-NL', { 
+                                hour: '2-digit', 
+                                minute: '2-digit',
+                                hour12: false 
+                              })}
+                            </span>
+                          </div>
+                          {item.priority && (
+                            <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-full">
+                              <AlertCircle size={12} className={getPriorityColor(item.priority)} />
+                              <span className="capitalize">{item.priority} prioriteit</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                {calendarItems.filter(item => item.type === 'task').length === 0 && (
+                  <div className="text-center py-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-500">Geen deadlines voor deze dag</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -542,6 +575,18 @@ const Calendar = () => {
           </div>
         </button>
       </div>
+
+      {/* Task Details Modal */}
+      {selectedTask && (
+        <TaskDetailsModal
+          task={selectedTask}
+          isVisible={showTaskDetails}
+          onClose={() => {
+            setShowTaskDetails(false);
+            setSelectedTask(null);
+          }}
+        />
+      )}
     </div>
   );
 };

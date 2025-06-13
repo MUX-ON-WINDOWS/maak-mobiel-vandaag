@@ -241,7 +241,7 @@ const Profile = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
         <div className="p-4 border-b border-gray-100">
           <h3 className="font-semibold text-gray-900 mb-3">Contact Informatie</h3>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="flex items-center gap-3">
               <Mail size={16} className="text-gray-400" />
               <span className="text-gray-600">{userProfile.email}</span>
@@ -288,16 +288,14 @@ const Profile = () => {
       </div>
 
       {/* Menu Items */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {menuItems.map((item, index) => {
           const Icon = item.icon;
           return (
             <button
               key={index}
               onClick={item.action}
-              className={`w-full flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors ${
-                index < menuItems.length - 1 ? 'border-b border-gray-100' : ''
-              }`}
+              className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors bg-white rounded-xl shadow-sm border border-gray-100"
             >
               <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                 <Icon size={20} className="text-gray-600" />

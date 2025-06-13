@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,14 +58,16 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col max-w-md mx-auto relative">
+    <div className="min-h-screen bg-gray-50 flex flex-col w-full">
       <MobileHeader 
         title={getPageTitle()} 
         onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
       />
       
       <main className="flex-1 overflow-y-auto">
-        {renderCurrentPage()}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {renderCurrentPage()}
+        </div>
       </main>
       
       <BottomNavigation 

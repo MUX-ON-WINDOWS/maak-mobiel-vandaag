@@ -115,7 +115,7 @@ const Dashboard = () => {
         <p className="text-gray-600">Hier is je projectoverzicht voor vandaag</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {stats.map((stat, index) => (
           <div key={index} onClick={() => handleStatClick(stat.title)} className="cursor-pointer">
             <StatCard {...stat} />
@@ -142,18 +142,20 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {projects.slice(0, 3).map((project) => (
-          <div key={project.id} onClick={() => handleProjectClick(project.title)} className="cursor-pointer">
-            <ProjectCard
-              title={project.title}
-              description={project.description || ''}
-              progress={project.progress}
-              dueDate={new Date(project.due_date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
-              teamSize={project.team_size}
-              color={`bg-${project.color}-500`}
-            />
-          </div>
-        ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {projects.slice(0, 3).map((project) => (
+            <div key={project.id} onClick={() => handleProjectClick(project.title)} className="cursor-pointer">
+              <ProjectCard
+                title={project.title}
+                description={project.description || ''}
+                progress={project.progress}
+                dueDate={new Date(project.due_date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
+                teamSize={project.team_size}
+                color={`bg-${project.color}-500`}
+              />
+            </div>
+          ))}
+        </div>
 
         {projects.length === 0 && (
           <div className="text-center py-8 bg-white rounded-xl shadow-sm border border-gray-100">
@@ -162,37 +164,39 @@ const Dashboard = () => {
         )}
       </div>
 
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recente Activiteit</h3>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          {recentActivities.slice(0, 4).map((activity, index) => (
-            <div key={index} className={`p-4 flex items-center gap-3 hover:bg-gray-50 transition-colors ${index < recentActivities.length - 1 ? 'border-b border-gray-100' : ''}`}>
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="flex-1">
-                <div className="font-medium text-gray-900">{activity.action}</div>
-                <div className="text-sm text-gray-600">{activity.description}</div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recente Activiteit</h3>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            {recentActivities.slice(0, 4).map((activity, index) => (
+              <div key={index} className={`p-4 flex items-center gap-3 hover:bg-gray-50 transition-colors ${index < recentActivities.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900">{activity.action}</div>
+                  <div className="text-sm text-gray-600">{activity.description}</div>
+                </div>
+                <div className="text-xs text-gray-500">{activity.time}</div>
               </div>
-              <div className="text-xs text-gray-500">{activity.time}</div>
-            </div>
-          ))}
+            ))}
 
-          {recentActivities.length === 0 && (
-            <div className="p-4 text-center text-gray-500">
-              Nog geen activiteiten
-            </div>
-          )}
+            {recentActivities.length === 0 && (
+              <div className="p-4 text-center text-gray-500">
+                Nog geen activiteiten
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-4 text-white">
-        <h4 className="font-semibold mb-2">Tip van de dag</h4>
-        <p className="text-sm mb-3">Gebruik labels en filters om je taken beter te organiseren en je productiviteit te verhogen.</p>
-        <button 
-          onClick={() => toast({ title: "Tip gelezen", description: "Meer tips binnenkort beschikbaar!" })}
-          className="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
-        >
-          Meer tips <ArrowRight size={16} />
-        </button>
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-4 text-white">
+          <h4 className="font-semibold mb-2">Tip van de dag</h4>
+          <p className="text-sm mb-3">Gebruik labels en filters om je taken beter te organiseren en je productiviteit te verhogen.</p>
+          <button 
+            onClick={() => toast({ title: "Tip gelezen", description: "Meer tips binnenkort beschikbaar!" })}
+            className="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+          >
+            Meer tips <ArrowRight size={16} />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, Sparkles, X } from 'lucide-react';
 import { celebrateTaskCompletion, MotivationalQuote } from '@/services/motivationalQuotes';
@@ -22,7 +21,7 @@ const TaskCelebration = ({ taskTitle, isVisible, onClose }: TaskCelebrationProps
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4 text-center relative animate-bounce">
+      <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4 text-center relative animate-celebration">
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
